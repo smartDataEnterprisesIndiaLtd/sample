@@ -1,0 +1,334 @@
+<?php
+App::import('Model','HomepageProduct');
+$this->HomepageProduct = & new HomepageProduct();
+$hm_products_daypick = $this->HomepageProduct->find('first',array('conditions'=>array('HomepageProduct.department_id'=>$dept_id)));
+
+$day_pick_str = '';
+if(!empty($hm_products_daypick['HomepageProduct']['day_pick_1'])){
+	if(empty($day_pick_str)){
+		$day_pick_str = $hm_products_daypick['HomepageProduct']['day_pick_1'];
+	} else {
+		$day_pick_str = $day_pick_str.','.$hm_products_daypick['HomepageProduct']['day_pick_1'];
+	}
+}
+if(!empty($hm_products_daypick['HomepageProduct']['day_pick_2'])){
+	if(empty($day_pick_str)){
+		$day_pick_str = $hm_products_daypick['HomepageProduct']['day_pick_2'];
+	} else {
+		$day_pick_str = $day_pick_str.','.$hm_products_daypick['HomepageProduct']['day_pick_2'];
+	}
+}
+if(!empty($hm_products_daypick['HomepageProduct']['day_pick_3'])){
+	if(empty($day_pick_str)){
+		$day_pick_str = $hm_products_daypick['HomepageProduct']['day_pick_3'];
+	} else {
+		$day_pick_str = $day_pick_str.','.$hm_products_daypick['HomepageProduct']['day_pick_3'];
+	}
+}
+if(!empty($hm_products_daypick['HomepageProduct']['day_pick_4'])){
+	if(empty($day_pick_str)){
+		$day_pick_str = $hm_products_daypick['HomepageProduct']['day_pick_4'];
+	} else {
+		$day_pick_str = $day_pick_str.','.$hm_products_daypick['HomepageProduct']['day_pick_4'];
+	}
+}
+
+if(!empty($day_pick_str)){
+	$day_pick_arr = explode(',',$day_pick_str);
+	if(empty($product_id)){
+		$product_id = $day_pick_arr[0];
+	} else{
+	}
+}
+
+App::import('Model','Product');
+$this->Product = & new Product();
+
+ $pick_day_info = $this->Product->find('all',array('conditions'=>array('Product.id IN ('.$day_pick_str.')'),'fields'=>array('Product.id','Product.minimum_price','Product.product_name','Product.description','Product.product_image','Product.product_rrp','Product.product_rrp','Product.minimum_price')));
+
+
+$str_div = '';
+
+if(!empty($pick_day_info)){
+	foreach($pick_day_info as $pickday){
+		$image_path ='';
+		if($pickday['Product']['product_image'] == 'no_image.gif' || $pickday['Product']['product_image'] == 'no_image.jpeg'){
+			$image_path = '/img/no_image.jpeg';
+		} else{
+			$image_path = '/'.PATH_PRODUCT.$pickday['Product']['product_image'];
+		}
+		$imagePath = WWW_ROOT.$image_path;
+		
+		if(file_exists($imagePath)){
+			$arrImageDim = $format->custom_image_dimentions($imagePath, 100, 100);
+		}
+
+		$str_div_tmp ='';
+		if(empty($str_div)){
+			$str_div = '<div class="left-pro-img">'.$html->image($image_path,array('width'=>$arrImageDim['width'],'height'=>$arrImageDim['height'],'alt'=>"")).'</div>';
+			$str_div = $str_div.'<!--Product Content Start-->';
+			$str_div = $str_div.'<div class="left-pro-content">';
+			$str_div = $str_div.'<ul class="pick-of-week-content">';
+			$str_div = $str_div.'<li>';
+			$str_div = $str_div.'<p>'.$html->link('<b>'.$pickday['Product']['product_name'].'</b>','#',array('escape'=>false,)).'</p>';
+			$str_div = $str_div.'<p id="short_desc" style="min-height:43px">'.substr($pickday['Product']['description'],'0','200').'</p>';
+			$str_div = $str_div.'<p id="long_desc" style="display:none">'.$pickday['Product']['description'].'</p>';
+			$str_div = $str_div.'<p id="more_link"><strong>'.$html->link('<strong>more &raquo;</strong>','javascript:void(0)',array('onClick'=>'full_desc()','escape'=>false,)).'</strong></p>';
+			$str_div = $str_div.'</li>';
+			$str_div = $str_div.'<li>';
+			$str_div= $str_div.'<p class="rates"><span class="rate larger-font"><strong>&pound;';
+			
+			if(($pickday['Product']['minimum_price'] < $pickday['Product']['product_rrp']) && ($pickday['Product']['minimum_price'] != '0.00')){
+				$mon = $format->money($pickday['Product']['minimum_price'],2);
+			}else {
+				$mon = $format->money($pickday['Product']['product_rrp'],2);
+			}
+			$str_div = $str_div.$mon.' </strong></span>';
+				
+			$amount =''; //pr($pickday['Product']);
+			if($pickday['Product']['minimum_price'] == '0.00')
+				$pickday['Product']['minimum_price'] = $pickday['Product']['product_rrp'];
+
+			if($pickday['Product']['product_rrp'] > $pickday['Product']['minimum_price']){
+				$sv_amount = $pickday['Product']['product_rrp'] - $pickday['Product']['minimum_price'];
+
+				$str_div = $str_div.'  | product_rrp: <span class="yellow"><s>&pound;'.$format->money($pickday['Product']['product_rrp'],2).'</s>';
+	
+			} else {
+				$sv_amount = 0;
+				$str_div = $str_div.'  | product_rrp: <span class="yellow">&pound;'.$format->money($pickday['Product']['product_rrp'],2);
+			}
+			$str_div = $str_div.'</span> | You save: <span class="yellow">&pound;'.$format->money($sv_amount,2).' ('.$format->percentage($sv_amount,$pickday['Product']['product_rrp']).'%)</span>';
+			$str_div = $str_div.'</p>';
+			$str_div = $str_div.'<p>In stock | Usually dispatched within 24 hours</p>';
+			$str_div = $str_div.'<!--Button Start-->';
+			$str_div = $str_div.$html->link('<span class="link-btn">BUY</span>','#',array('class'=>'ornge-btn display-bl','escape'=>false,));
+			$str_div = $str_div.'<!--Button Closed-->';
+			$str_div = $str_div.'</li>';
+			$str_div = $str_div.'</ul>';
+			$str_div = $str_div.'</div>';
+		} else{
+
+			$str_div_tmp = '<div class="left-pro-img">'.$html->image($image_path,array('width'=>$arrImageDim['width'],'height'=>$arrImageDim['height'],'alt'=>"")).'</div>';
+			$str_div_tmp = $str_div_tmp.'<!--Product Content Start-->';
+			$str_div_tmp = $str_div_tmp.'<div class="left-pro-content">';
+			$str_div_tmp = $str_div_tmp.'<ul class="pick-of-week-content">';
+			$str_div_tmp = $str_div_tmp.'<li>';
+			$str_div_tmp = $str_div_tmp.'<p>'.$html->link('<b>'.$pickday['Product']['product_name'].'</b>','#',array('escape'=>false,)).'</p>';
+			$str_div_tmp = $str_div_tmp.'<p id="short_desc" style="min-height:43px">'.substr($pickday['Product']['description'],'0','200').'</p>';
+			$str_div_tmp = $str_div_tmp.'<p id="long_desc" style="display:none">'.$pickday['Product']['description'].'</p>';
+			$str_div_tmp = $str_div_tmp.'<p id="more_link"><strong>'.$html->link('<strong>more &raquo;</strong>','javascript:void(0)',array('onClick'=>'full_desc()','escape'=>false,)).'</strong></p>';
+			$str_div_tmp = $str_div_tmp.'</li>';
+			$str_div_tmp = $str_div_tmp.'<li>';
+			$str_div_tmp= $str_div_tmp.'<p class="rates"><span class="rate larger-font"><strong>&pound;';
+			
+			if(($pickday['Product']['minimum_price'] < $pickday['Product']['product_rrp']) && ($pickday['Product']['minimum_price'] != '0.00')) 
+				$mon = $format->money($pickday['Product']['minimum_price'],2);
+			else 
+				$mon = $format->money($pickday['Product']['product_rrp'],2);
+
+			$str_div_tmp = $str_div_tmp.$mon.' </strong></span>';
+				
+			$amount =''; //pr($pickday['Product']);
+			if($pickday['Product']['minimum_price'] == '0.00')
+				$pickday['Product']['minimum_price'] = $pickday['Product']['product_rrp'];
+
+			if($pickday['Product']['product_rrp'] > $pickday['Product']['minimum_price']){
+				$sv_amount = $pickday['Product']['product_rrp'] - $pickday['Product']['minimum_price'];
+
+				$str_div_tmp = $str_div_tmp.'  | product_rrp: <span class="yellow"><s>&pound;'.$format->money($pickday['Product']['product_rrp'],2).'</s>';
+	
+			} else {
+				$sv_amount = 0;
+				$str_div_tmp = $str_div_tmp.'  | product_rrp: <span class="yellow">&pound;'.$format->money($pickday['Product']['product_rrp'],2);
+			}
+			$str_div_tmp = $str_div_tmp.'</span> | You save: <span class="yellow">&pound;'.$format->money($sv_amount,2).' ('.$format->percentage($sv_amount,$pickday['Product']['product_rrp']).'%)</span>';
+			$str_div_tmp = $str_div_tmp.'</p>';
+			$str_div_tmp = $str_div_tmp.'<p>In stock | Usually dispatched within 24 hours</p>';
+			$str_div_tmp = $str_div_tmp.'<!--Button Start-->';
+			$str_div_tmp = $str_div_tmp.$html->link('<span class="link-btn">BUY</span>','#',array('class'=>'ornge-btn display-bl','escape'=>false,));
+			$str_div_tmp = $str_div_tmp.'<!--Button Closed-->';
+			$str_div_tmp = $str_div_tmp.'</li>';
+			$str_div_tmp = $str_div_tmp.'</ul>';
+			$str_div_tmp = $str_div_tmp.'</div>';
+
+
+
+			$str_div = $str_div.'-,-'.$str_div_tmp;
+		}
+	}
+}
+
+
+//pr($str_div);
+
+
+$pick_day = $this->Product->find('all',array('conditions'=>array('Product.id IN ('.$day_pick_str.')'),'fields'=>array('Product.product_image')));
+
+
+$dayimg = '';
+if(!empty($pick_day)){
+	foreach($pick_day as $dayimg){
+		if(empty($imgstr)){
+			$imgstr = $dayimg['Product']['product_image'];
+		} else{
+			$imgstr = $imgstr.','.$dayimg['Product']['product_image'];
+		}
+	}
+}
+pr($str_div);
+
+?>
+
+<style type="text/css">
+		/* All Styles Optional */
+	* {
+		font-family:arial;
+		font-size:10pt;
+	}
+	div#show3 {
+		background-color:#efefef;
+		width:140px;
+		margin:0 auto;
+		border:1px solid #444444;
+	}
+		div#show3 table td, div#show4 table td {
+		height:24px;
+		background-image:url('38.gif');
+	}
+		div#show4 table td {
+		background-image:url('40.gif');
+	}
+		div#show3 table input,  div#show4 table input {
+		outline-style:none;
+	}
+</style>
+<script type="text/javascript">
+	//If using image buttons as controls, Set image buttons' image preload here true
+	//(use false for no preloading and for when using no image buttons as controls):
+
+	var all_imgs = '<?php echo $imgstr;?>';
+	var all_divs = '<?php echo $str_div;?>';
+	//alert(all_imgs);
+	var preload_ctrl_images=true;
+	//And configure the image buttons' images here:
+	var previmg='left.gif';
+	var stopimg='stop.gif';
+	var playimg='play.gif';
+	var nextimg='right.gif';
+	
+	var slides= Array(); //FIRST SLIDESHOW
+	var divslides = Array();
+	//var div_slides = Array();
+	//configure the below images and descriptions to your own. 
+ 	slides = all_imgs.split(',');
+	alert(slides);
+	//divslides = all_divs.split('-,-');
+	//alert(divslides);
+	//alert(divslides.length);
+	for(i=0;i<slides.length;i++){
+		slides[i] = ["/img/products/"+slides[i]];
+	}
+alert(slides);
+	//for(j=0;j<divslides.length;j++){
+	//	div_slides[j] = [divslides[j]];
+	//}
+	//above slide show uses only the defaults
+
+</script>
+ <?php echo $javascript->link("swissarmy");
+// if(!empty($pick_day)){
+// 	if($pick_day['Product']['product_image'] == 'no_image.gif' || $pick_day['Product']['product_image'] == 'no_image.jpeg'){
+// 		$image_path = '/img/no_image.jpeg';
+// 	} else{
+// 		$image_path = '/'.PATH_PRODUCT.$pick_day['Product']['product_image'];
+// 	}
+// 	$imagePath = WWW_ROOT.$image_path;
+// 	
+// 	if(file_exists($imagePath)){
+// 		$arrImageDim = $format->custom_image_dimentions($imagePath, 100, 100);
+// 	}
+// ?>
+<div class="products-widget">
+	<p>
+	<script type="text/javascript">
+		//Notes on Parameters: The only required parameter is the slides_array_name.  If Width is used, so must Height.
+		//Interval is optional too.  It is always last, either fourth after Width and Height or second after Slides_array_name.
+		//Usage: new inter_slide(Slides_array_name, Width, Height, Interval)
+		new inter_slide(slides);
+		</script>
+</p>
+	<!--<div class="left-pro-img" style="height:200px">
+		<p>
+		<script type="text/javascript">
+		//Notes on Parameters: The only required parameter is the slides_array_name.  If Width is used, so must Height.
+		//Interval is optional too.  It is always last, either fourth after Width and Height or second after Slides_array_name.
+		//Usage: new inter_slide(Slides_array_name, Width, Height, Interval)
+		new inter_slide(slides)
+		</script><?php //echo $html->image($image_path , array('width'=>$arrImageDim['width'],'height'=>$arrImageDim['height'],'alt'=>""));?>
+	</div>-->
+	<!--Product Content Start-->
+	<!--<div class="left-pro-content">
+		<ul class="pick-of-week-content">-->
+			<!--<li>
+				<p>
+					<?php //echo $html->link('<b>'.$pick_day['Product']['product_name'].'</b>','#',array('escape'=>false,));?>
+				</p>
+				<p id="short_desc" style="min-height:43px">
+					<?php //echo substr($pick_day['Product']['description'],'0','200');?>
+				</p>
+				<p id="long_desc" style="display:none">
+					<?php //echo $pick_day['Product']['description'];?>
+				</p>
+				<p id="more_link">
+					<strong><?php //echo $html->link('<strong>more &raquo;</strong>','javascript:void(0)',array('onClick'=>'full_desc()','escape'=>false,));?></strong>
+				</p>
+			</li>
+			<li>-->
+				<!--<p class="rates">
+					<span class="rate larger-font"><strong>&pound;<?php /*if(($pick_day['Product']['minimum_price'] < $pick_day['Product']['product_rrp']) && ($pick_day['Product']['minimum_price'] != '0.00')) echo $format->money($pick_day['Product']['minimum_price'],2); else echo $format->money($pick_day['Product']['product_rrp'],2);*/ ?></strong></span><?php 
+					//$amount =''; //pr($pick_day['Product']);
+					/*if($pick_day['Product']['minimum_price'] == '0.00')
+						$pick_day['Product']['minimum_price'] = $pick_day['Product']['product_rrp'];
+					if($pick_day['Product']['product_rrp'] > $pick_day['Product']['minimum_price']){ $sv_amount = $pick_day['Product']['product_rrp'] - $pick_day['Product']['minimum_price'];*/?>  | product_rrp: <span class="yellow"><s>&pound;<?php //echo $format->money($pick_day['Product']['product_rrp'],2);?></s><?php //} else { $sv_amount = 0;?>  | product_rrp: <span class="yellow">&pound;<?php //echo $format->money($pick_day['Product']['product_rrp'],2); }?></span> | You save: <span class="yellow">&pound;<?php //echo $format->money($sv_amount,2);?> (<?php //echo $format->percentage($sv_amount,$pick_day['Product']['product_rrp']);?>%)</span>
+				</p>
+				<p>In stock | Usually dispatched within 24 hours</p>-->
+				<!--Button Start-->
+				<?php //echo $html->link('<span class="link-btn">BUY</span>','#',array('class'=>'ornge-btn display-bl','escape'=>false,));?>
+				<!--Button Closed-->
+			<!--</li>
+		</ul>
+	</div>-->
+	<?php //if(!empty($day_pick_arr)){ $i = 1; ?>
+	<!--Product Content Closed-->
+	<!--<div class="pagination">
+		<ul>-->
+			<?php /*foreach ($day_pick_arr as $pick_day_product_id){
+				$last_id = $pick_day_product_id;
+				if($product_id == $pick_day_product_id){
+					$class = 'active';
+				} else{
+					$class = '';
+				}*/
+				//$class = '';
+			?>
+			<!--<li class="<?php //echo $class;?>"><?php //echo $ajax->link($i,'', array('update' => 'pick-of-day', 'url' => '/homes/pick_of_day/'.$pick_day_product_id.'/'.$dept_id), null,false);?></li>
+			<?php //$i++; }?>
+			<li class="<?php //echo $class;?>"><?php //echo $ajax->link('||','', array('update' => 'pick-of-day', 'url' => '/homes/pick_of_day/'.$last_id.'/'.$dept_id), null,false);?></li>
+		</ul>
+	</div>-->
+	<?php // }?>
+</div>
+<?php //}
+
+
+?>
+<script type="text/javascript">
+// function full_desc(){
+// 	jQuery('#short_desc').css('display','none');
+// 	jQuery('#more_link').css('display','none');
+// 	jQuery('#long_desc').css('display','block');
+// }
+
+</script>
+

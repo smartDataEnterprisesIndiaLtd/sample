@@ -1,0 +1,1 @@
+<?php echo "you are here on live server";  ?>

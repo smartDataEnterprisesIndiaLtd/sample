@@ -1,0 +1,198 @@
+<style type="text/css" >
+.orange-button-widget{ padding-left:0px !important; }
+</style>
+<?php 
+echo $javascript->link(array('jquery-1.3.2.min','lib/prototype', 'functions'));
+e($html->script('fancybox/jquery.fancybox-1.3.4.pack'));
+e($html->script('fancybox/jquery.easing-1.3.pack'));
+e($html->script('fancybox/jquery.mousewheel-3.0.4.pack',false));
+echo $html->css('jquery.fancybox-1.3.4');
+
+$offerSerialize['p_id']  = $product_id;
+$offerSerialize['s_id']  = $seller_id;
+$offerSerialize['c_id']  = $condition_id;
+$offerSerialize['type']  = $offer_type;
+$encodeOfferData = base64_encode(serialize($offerSerialize));
+
+
+if(strtoupper($offer_type) != 'M'){
+		$minimum_price_value = $product_detail['ProductSeller']['price'];
+}else{
+		if($condition_id == 1 || $condition_id == 4){ // for new 
+			$minimum_price_value = $format->money($product_detail['Product']['minimum_price_value'], 2);	
+		}else{
+			$minimum_price_value = $format->money($product_detail['Product']['minimum_price_used'], 2);
+		}
+		if($minimum_price_value == '0.00'){
+		$minimum_price_value = $product_detail['Product']['product_rrp'];
+		}
+}
+
+echo $form->create('Offer',array('action'=>'add/'.$encodeOfferData,'method'=>'POST','name'=>'frmOffer','id'=>'frmOffer'));
+//echo $form->create('Offer',array('action'=>'add/'.$product_id.'/'.$offer_type,'method'=>'POST','name'=>'frmOffer','id'=>'frmOffer'));
+?>
+
+<?php echo $form->hidden('Offer.product_id',array('value'=>$product_id, 'type'=>'text','label'=>false,'class'=>'textfield','div'=>false));?>
+<?php echo $form->hidden('Offer.offer_type',array('value'=>$offer_type, 'type'=>'text','label'=>false,'class'=>'textfield','div'=>false));?>
+<?php echo $form->hidden('Offer.recipient_id',array('value'=>$seller_id,'type'=>'text','label'=>false,'class'=>'textfield','div'=>false));?>
+<?php //echo $form->hidden('Offer.minimum_price_value',array('value'=>$product_detail['Product']['minimum_price_value'],'type'=>'text','label'=>false,'class'=>'textfield','div'=>false));?>
+<?php echo $form->hidden('Offer.minimum_price_value',array('value'=>$minimum_price_value,'type'=>'text','label'=>false,'class'=>'textfield','div'=>false));?>
+<?php echo $form->hidden('Offer.condition_id',array('value'=>$condition_id, 'type'=>'text','label'=>false,'class'=>'textfield','div'=>false));?>
+
+<script type="text/javascript">
+ 
+jQuery(document).ready(function(){
+		calculateOfferPrice();
+		jQuery(':text').keyup(function(){
+				calculateOfferPrice();
+		});
+		//jQuery('#offer_quantity_id').keyup(function(){
+		//		calculateOfferPrice();
+		//});
+		
+});
+/*
+ functio to calculate the offer price for the entered price and quantity
+*/
+function calculateOfferPrice(){
+	var price = jQuery('#offer_price_id').val();
+	var qty   = jQuery('#offer_quantity_id').val();
+	var offerPrice = (price * qty);
+	if(offerPrice > 0){
+		var num = new Number(offerPrice);
+		var roundedofferPrice = num.toFixed(2);
+				
+		//var roundedofferPrice = roundNumber(offerPrice, 2);   
+        
+		jQuery('#total_offer_price_id').html(roundedofferPrice);  
+    jQuery('#currency').css('display','inline');    
+	}
+}
+
+
+</script>                                    
+
+<!-- Disable button Once clicked -->
+<script>
+jQuery(document).ready(function()  {
+	//disable submit button after one click
+	jQuery('#clickOnce').live('click',function(){
+		
+		if((jQuery("#offer_price_id").val() != "") && (jQuery("#offer_quantity_id").val() != ""))
+		{
+		        jQuery('#frmOffer').submit();
+			jQuery("#clickOnce").attr("disabled", "true");
+		}
+	});
+});
+</script>
+
+<!--Popup Widget Start-->
+<div class="popup-widget popup-width1">
+
+    <ul class="pop-content-list">
+    	<li><h4 class="orange-color-text">Make me an Offer&trade;
+	<?php if(strtoupper($offer_type) == 'M'){ ?>
+		<span class="red-color-text smlr-fnt">(Multiple Seller Offer)</span>
+	<?php } ?></h4></li>
+        <li>
+		
+	<?PHP if ($session->check('Message.flash')){ ?>
+         <li>	
+		<?php echo $session->flash();?>
+	</li>
+	<?php }?>	
+        <?php if(!empty($errors)){?>
+         <li>	
+		<div class="error_msg_box"> 
+			Please complete the mandatory fields highlighted below.
+		</div>
+	</li>
+	<?php }?>
+	
+            <p><span class="smlr-fnt"><strong></strong>Use Make me an Offer to buy at the prices you set. 
+            <?php echo $html->link('Learn more','javascript:void(0)',array('escape'=>false,'onClick'=>'golink(\'/pages/view/how-to-make-an-offer\');'));?>
+            </span></p>
+            <p><span class="bl-clr"><strong>Fill in the details below and send your offer.</strong></span></p>
+        </li>
+        <li>
+		<p><span class="larger-font"><strong>Item:</strong></span> <?php echo $product_detail['Product']['product_name'];?></p>
+                <p class="margin"><span class="larger-font"><strong>Seller:</strong></span>
+	    
+	    
+	  <?php
+	if(strtoupper($offer_type) == 'M'){  // show all sellers name with comma separated
+		if(is_array($sellerIds)){
+			$sellerName = '';
+			foreach($sellerIds as $sellerId){
+				$sellerDetails = $this->Common->getsellerInfo($sellerId);
+				if(!empty($sellerDetails['Seller']['business_display_name']) ){
+						$sellerName .= $sellerDetails['Seller']['business_display_name'];
+						$sellerName .= ",&nbsp;";
+				}
+				
+			}
+			echo rtrim($sellerName, ',&nbsp;');
+		}
+	    }else{  //  show the only lowest  price seller name
+		$sellerDetails = $this->Common->getsellerInfo($seller_id);
+		echo $sellerDetails['Seller']['business_display_name'];
+	    }?></p>
+        </li>
+         <li>
+		<span style="float:left; margin-top:-2px;"><strong>I want to pay:</strong> <strong class="largr-font"><?php echo CURRENCY_SYMBOL;?>&nbsp;</strong></span>
+		<span><?php 
+		if(($form->error('Offer.offer_price'))){
+			$errorClass='textfield sml-wdth error_message_box';
+		}else{
+			$errorClass='textfield sml-wdth';
+		}
+		echo $form->input('Offer.offer_price', array('id'=>'offer_price_id','style'=>'float:left;margin-right:5px','error'=>false, "onkeyup"=>"validateFloat('offer_price_id')",'maxlength'=>'9', 'type' =>'text', 'class'=>$errorClass,'label'=>false,'div'=>false) ); ?></span>
+    <span class="bl-clr"><strong>Do not offer more than <?php echo CURRENCY_SYMBOL, $minimum_price_value ;?></strong></span>
+         </li>
+	 <li>
+		
+		<span style="float:left; margin-top:-1px;"><p class="margin"><strong>How many would you like to buy?:</strong> </p></span>
+		<span><?php 
+		if(($form->error('Offer.offer_price'))){
+			$errorClass='textfield sml-wdth error_message_box';
+		}else{
+			$errorClass='textfield sml-wdth';
+		}
+		echo $form->input('Offer.quantity',array('id'=>'offer_quantity_id','style'=>'float:left;margin-right:5px;', "onkeyup"=>"validateNumber('offer_quantity_id')", 'type'=>'text','maxlength'=>5,'label'=>false,'class'=>$errorClass,'div'=>false,'error'=>false));?></span>
+	   
+	
+		<p class="margin bl-clr" style="float:left;"><strong>Expires on:</strong>
+				<span class="red-color-text">
+				<?php
+				$current_date = date("Y-m-d"); // current date
+				echo $expiry_date = date('d/m/Y', strtotime(date("Y-m-d", strtotime($current_date)) . " +2 day"));
+				?>
+				</span>
+				<span class="padng-lft" style="padding-left:4px;" ><strong>Offer value: <span id="currency" style="display:none;"><?php echo CURRENCY_SYMBOL;?></span><span id="total_offer_price_id"></span></strong></span>
+		 </p> <br>&nbsp;
+	  
+		
+        </li>
+	 
+        <li style="text-align:center; margin-top: 5px;">
+        	<div class="orange-button-widget">
+		<?php echo $form->button('Make me an offer',array('type'=>'submit','class'=>'orange-btn-input','div'=>false,'id'=>'clickOnce'));?>
+		</div>
+        </li>
+	
+    </ul>
+</div>
+<!--Popup Widget Closed-->
+ 
+<?php echo $form->end(); ?>
+
+<script>
+/*
+var err_msg_alert = '<?php //echo $errors ?>';
+if((err_msg_alert != '') && (jQuery("#fancybox-content",parent.document).height() == 220))
+{
+	jQuery("#fancybox-content",parent.document).height(jQuery("#fancybox-content",parent.document).height()+45);
+}*/
+</script>
+
